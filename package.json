@@ -1,8 +1,7 @@
 {
   "name": "metadata-booster",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Emits detailed metadata of your types. You can then get it in runtime to deal with schema-aware operation, like defining GraphQL schemas, ORM operations, etc.",
-  "main": "index.js",
   "repository": "https://github.com/boostercloud/metadata-booster.git",
   "keywords": [
     "metadata",
@@ -16,6 +15,10 @@
     "url": "https://github.com/boostercloud/metadata-booster/issues"
   },
   "homepage": "https://github.com/boostercloud/metadata-booster#readme",
+  "main": "dist/index.js",
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@types/node": "14.14.22",
     "@typescript-eslint/eslint-plugin": "4.14.1",
@@ -27,6 +30,7 @@
     "lint:check": "eslint --ext '.js,.ts' **/*.ts",
     "lint:fix": "eslint --quiet --fix --ext '.js,.ts' **/*.ts",
     "compile": "tsc -b tsconfig.json",
+    "prepack": "tsc -b tsconfig.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   }
 }
