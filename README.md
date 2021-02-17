@@ -161,7 +161,6 @@ npm install --save-prod "reflect-metadata"
   "scripts": {
     "compile": "ttsc -b tsconfig.json",
     "test": "..."
-    ...
   }
 ```
 
