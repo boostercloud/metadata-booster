@@ -166,6 +166,9 @@ npm install --save-prod "reflect-metadata"
 
 Now you can compile your project by running `npm run compile` and have access to a full detailed metadata for all your Typescript classes.
 
+## Compatibility
+This transformer is compatible with Typescript version 4.x.x
+
 ## Missing features
 - [ ] Gather interfaces metadata
 - [ ] Gather method parameters metadata
