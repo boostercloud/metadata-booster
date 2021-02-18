@@ -1,5 +1,5 @@
 import * as ts from 'typescript'
-import { ClassInfo, PropertyInfo, TypeInfo } from './metadata-structure'
+import { ClassInfo, PropertyInfo, TypeInfo } from './metadata-extractors'
 
 export function createClassMetadataStatement(
   f: ts.NodeFactory,
@@ -80,6 +80,10 @@ function createMetadataForTypeInfo(
 ): ts.ObjectLiteralExpression {
   return f.createObjectLiteralExpression(
     [
+      f.createPropertyAssignment(
+        'name',
+        f.createStringLiteral(typeInfo.name),
+      ),
       f.createPropertyAssignment(
         'type',
         f.createCallExpression(filterInterfaceFunctionName, undefined, [

@@ -1,5 +1,21 @@
 import * as ts from 'typescript'
-import { ClassInfo, PropertyInfo, TypeInfo } from './metadata-structure'
+
+export interface TypeInfo {
+  name: string
+  parameters: Array<TypeInfo>
+}
+
+export interface PropertyInfo {
+  name: string
+  isMethod: boolean
+  typeInfo: TypeInfo
+}
+
+export interface ClassInfo {
+  name: string
+  fields: Array<PropertyInfo>
+  methods: Array<PropertyInfo>
+}
 
 export function getClassInfo(
   classNode: ts.ClassDeclaration,
