@@ -4,7 +4,8 @@ import { ClassInfo, PropertyInfo, TypeInfo } from './metadata-extractors'
 export function createClassMetadataDecorator(
   f: ts.NodeFactory,
   classInfo: ClassInfo,
-  filterInterfaceFunctionName: ts.Identifier
+  filterInterfaceFunctionName: ts.Identifier,
+  typesByModule: Record<string, string>
 ): ts.Decorator {
   return f.createDecorator(
     f.createCallExpression(
@@ -30,7 +31,8 @@ export function createClassMetadataDecorator(
               createPropertiesMetadata(
                 f,
                 classInfo.fields,
-                filterInterfaceFunctionName
+                filterInterfaceFunctionName,
+                typesByModule
               )
             ),
             f.createPropertyAssignment(
@@ -38,7 +40,8 @@ export function createClassMetadataDecorator(
               createPropertiesMetadata(
                 f,
                 classInfo.methods,
-                filterInterfaceFunctionName
+                filterInterfaceFunctionName, 
+                typesByModule
               )
             ),
           ],
@@ -52,7 +55,8 @@ export function createClassMetadataDecorator(
 function createPropertiesMetadata(
   f: ts.NodeFactory,
   properties: Array<PropertyInfo>,
-  filterInterfaceFunctionName: ts.Identifier
+  filterInterfaceFunctionName: ts.Identifier,
+  typesByModule: Record<string, string>
 ): ts.ArrayLiteralExpression {
   return f.createArrayLiteralExpression(
     properties.map((prop) => {
@@ -64,7 +68,8 @@ function createPropertiesMetadata(
             createMetadataForTypeInfo(
               f,
               prop.typeInfo,
-              filterInterfaceFunctionName
+              filterInterfaceFunctionName,
+              typesByModule
             )
           ),
         ],
@@ -77,8 +82,14 @@ function createPropertiesMetadata(
 function createMetadataForTypeInfo(
   f: ts.NodeFactory,
   typeInfo: TypeInfo,
-  filterInterfaceFunctionName: ts.Identifier
+  filterInterfaceFunctionName: ts.Identifier,
+  typesByModule: Record<string, string>
 ): ts.ObjectLiteralExpression {
+  let requiredType = typeInfo.name
+  const typeModule = typesByModule[requiredType]
+  if (typeModule) {
+    requiredType = `require('${typeModule}').${requiredType}`
+  }
   return f.createObjectLiteralExpression(
     [
       f.createPropertyAssignment(
@@ -88,14 +99,14 @@ function createMetadataForTypeInfo(
       f.createPropertyAssignment(
         'type',
         f.createCallExpression(filterInterfaceFunctionName, undefined, [
-          f.createStringLiteral(typeInfo.name),
+          f.createStringLiteral(requiredType),
         ])
       ),
       f.createPropertyAssignment(
         'parameters',
         f.createArrayLiteralExpression(
           typeInfo.parameters.map((param) =>
-            createMetadataForTypeInfo(f, param, filterInterfaceFunctionName)
+            createMetadataForTypeInfo(f, param, filterInterfaceFunctionName, typesByModule)
           )
         )
       ),

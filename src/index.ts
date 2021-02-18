@@ -15,6 +15,7 @@ const transformer: (
     const f = context.factory
     const filterInterfaceFunctionName = f.createUniqueName('filterInterface')
     return (sourceFile) => {
+      const importedTypes: Record<string, string> = {}
       function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
         if (ts.isImportDeclaration(node)) {
           // To ensure we import 'reflect-metadata', delete it from the file in case it is already there.
@@ -24,6 +25,10 @@ const transformer: (
           if (moduleName == 'reflect-metadata') {
             return undefined
           }
+          const namedBindings = node.importClause?.namedBindings
+          if (namedBindings && 'elements' in namedBindings) {
+            namedBindings.elements.forEach((elem) => importedTypes[elem.name.getText()] = moduleName)
+          }
         }
         if (ts.isClassDeclaration(node)) {
           const classInfo = getClassInfo(node, context, checker)
@@ -31,7 +36,8 @@ const transformer: (
             const metadataDecorator = createClassMetadataDecorator(
               f,
               classInfo,
-              filterInterfaceFunctionName
+              filterInterfaceFunctionName,
+              importedTypes
             )
             const newDecorators = [...node.decorators ?? [], metadataDecorator]
             return f.updateClassDeclaration(node, newDecorators, node.modifiers, node.name, node.typeParameters, node.heritageClauses, node.members)
