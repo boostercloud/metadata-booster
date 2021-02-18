@@ -144,11 +144,14 @@ npm install --save-dev "ttypescript"
 ```shell
 npm install --save-prod "reflect-metadata"
 ```
-3. Go to your `tsconfig.json` file and add "metadata-booster" as a transformer plugin inside the `"compilerOptions"` section:
+3. Go to your `tsconfig.json` file and 
+   - a) Ensure you have the option `"experimentalDecorators": true`. The reason is that the metadata is automatically added as a decorator to the class. In any case, you don't need to write any decorator.
+   - b) Add "metadata-booster" as a transformer plugin inside the `"compilerOptions"` section
 ```shell
 {
   "compilerOptions": {
     (...)
+    "experimentalDecorators": true
     "plugins": [
       { "transform": "metadata-booster"}
     ]

@@ -1,7 +1,7 @@
 import * as ts from 'typescript'
 import { getClassInfo } from './metadata-extractors'
 import {
-  createClassMetadataStatement,
+  createClassMetadataDecorator,
   createFilterInterfaceFunction,
 } from './statement-creators'
 
@@ -28,14 +28,13 @@ const transformer: (
         if (ts.isClassDeclaration(node)) {
           const classInfo = getClassInfo(node, context, checker)
           if (classInfo) {
-            return [
-              node,
-              createClassMetadataStatement(
-                f,
-                classInfo,
-                filterInterfaceFunctionName
-              ),
-            ]
+            const metadataDecorator = createClassMetadataDecorator(
+              f,
+              classInfo,
+              filterInterfaceFunctionName
+            )
+            const newDecorators = [...node.decorators ?? [], metadataDecorator]
+            return f.updateClassDeclaration(node, newDecorators, node.modifiers, node.name, node.typeParameters, node.heritageClauses, node.members)
           }
         }
         return ts.visitEachChild(node, visitor, context)

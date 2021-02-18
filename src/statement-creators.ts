@@ -1,50 +1,51 @@
 import * as ts from 'typescript'
 import { ClassInfo, PropertyInfo, TypeInfo } from './metadata-extractors'
 
-export function createClassMetadataStatement(
+export function createClassMetadataDecorator(
   f: ts.NodeFactory,
   classInfo: ClassInfo,
   filterInterfaceFunctionName: ts.Identifier
-): ts.CallExpression {
-  return f.createCallExpression(
-    f.createPropertyAccessExpression(
-      f.createIdentifier('Reflect'),
-      'defineMetadata'
-    ),
-    undefined,
-    [
-      f.createStringLiteral('booster:typeinfo'),
-      f.createObjectLiteralExpression(
-        [
-          f.createPropertyAssignment(
-            'name',
-            f.createStringLiteral(classInfo.name)
-          ),
-          f.createPropertyAssignment(
-            'type',
-            f.createIdentifier(classInfo.name)
-          ),
-          f.createPropertyAssignment(
-            'fields',
-            createPropertiesMetadata(
-              f,
-              classInfo.fields,
-              filterInterfaceFunctionName
-            )
-          ),
-          f.createPropertyAssignment(
-            'methods',
-            createPropertiesMetadata(
-              f,
-              classInfo.methods,
-              filterInterfaceFunctionName
-            )
-          ),
-        ],
-        true
+): ts.Decorator {
+  return f.createDecorator(
+    f.createCallExpression(
+      f.createPropertyAccessExpression(
+        f.createIdentifier('Reflect'),
+        'metadata'
       ),
-      f.createIdentifier(classInfo.name),
-    ]
+      undefined,
+      [
+        f.createStringLiteral('booster:typeinfo'),
+        f.createObjectLiteralExpression(
+          [
+            f.createPropertyAssignment(
+              'name',
+              f.createStringLiteral(classInfo.name)
+            ),
+            f.createPropertyAssignment(
+              'type',
+              f.createIdentifier(classInfo.name)
+            ),
+            f.createPropertyAssignment(
+              'fields',
+              createPropertiesMetadata(
+                f,
+                classInfo.fields,
+                filterInterfaceFunctionName
+              )
+            ),
+            f.createPropertyAssignment(
+              'methods',
+              createPropertiesMetadata(
+                f,
+                classInfo.methods,
+                filterInterfaceFunctionName
+              )
+            ),
+          ],
+          true
+        )
+      ]
+    )
   )
 }
 
