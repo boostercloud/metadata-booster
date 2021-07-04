@@ -2,6 +2,7 @@ import * as ts from 'typescript'
 
 export interface TypeInfo {
   name: string
+  isArray: boolean
   parameters: Array<TypeInfo>
 }
 
@@ -55,6 +56,7 @@ function getTypeInfo(
 ): TypeInfo {
   const typeInfo: TypeInfo = {
     name: 'undefined',
+    isArray: false,
     parameters: [],
   }
   if (hasNoTypeInfo(node)) {
@@ -71,6 +73,9 @@ function getTypeInfo(
         node.typeArguments?.map((node) => getTypeInfo(node, context)) ?? []
     } else if (ts.isFunctionTypeNode(node)) {
       typeInfo.name = 'Function' // TODO: We could get more detailed here
+    } else if (ts.isArrayTypeNode(node)) {
+      typeInfo.isArray = true
+      typeInfo.name = node.elementType.getText()
     } else {
       typeInfo.name = normalizeTypeName(node.getText())
     }

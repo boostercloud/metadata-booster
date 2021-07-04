@@ -4,6 +4,7 @@ export type AnyType = { new (...args: any[]): any }
 export interface TypeMetadata {
     name: string
     type: AnyType
+    isArray: boolean
     parameters: Array<TypeMetadata>
 }
 
