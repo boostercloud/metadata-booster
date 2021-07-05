@@ -102,7 +102,6 @@ function createMetadataForTypeInfo(
           f.createStringLiteral(requiredType),
         ])
       ),
-      f.createPropertyAssignment('isArray', typeInfo.isArray ? f.createTrue() : f.createFalse()),
       f.createPropertyAssignment(
         'parameters',
         f.createArrayLiteralExpression(
