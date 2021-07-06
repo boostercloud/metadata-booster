@@ -8,47 +8,24 @@ export function createClassMetadataDecorator(
   typesByModule: Record<string, string>
 ): ts.Decorator {
   return f.createDecorator(
-    f.createCallExpression(
-      f.createPropertyAccessExpression(
-        f.createIdentifier('Reflect'),
-        'metadata'
+    f.createCallExpression(f.createPropertyAccessExpression(f.createIdentifier('Reflect'), 'metadata'), undefined, [
+      f.createStringLiteral('booster:typeinfo'),
+      f.createObjectLiteralExpression(
+        [
+          f.createPropertyAssignment('name', f.createStringLiteral(classInfo.name)),
+          f.createPropertyAssignment('type', f.createIdentifier(classInfo.name)),
+          f.createPropertyAssignment(
+            'fields',
+            createPropertiesMetadata(f, classInfo.fields, filterInterfaceFunctionName, typesByModule)
+          ),
+          f.createPropertyAssignment(
+            'methods',
+            createPropertiesMetadata(f, classInfo.methods, filterInterfaceFunctionName, typesByModule)
+          ),
+        ],
+        true
       ),
-      undefined,
-      [
-        f.createStringLiteral('booster:typeinfo'),
-        f.createObjectLiteralExpression(
-          [
-            f.createPropertyAssignment(
-              'name',
-              f.createStringLiteral(classInfo.name)
-            ),
-            f.createPropertyAssignment(
-              'type',
-              f.createIdentifier(classInfo.name)
-            ),
-            f.createPropertyAssignment(
-              'fields',
-              createPropertiesMetadata(
-                f,
-                classInfo.fields,
-                filterInterfaceFunctionName,
-                typesByModule
-              )
-            ),
-            f.createPropertyAssignment(
-              'methods',
-              createPropertiesMetadata(
-                f,
-                classInfo.methods,
-                filterInterfaceFunctionName, 
-                typesByModule
-              )
-            ),
-          ],
-          true
-        )
-      ]
-    )
+    ])
   )
 }
 
@@ -65,12 +42,7 @@ function createPropertiesMetadata(
           f.createPropertyAssignment('name', f.createStringLiteral(prop.name)),
           f.createPropertyAssignment(
             'typeInfo',
-            createMetadataForTypeInfo(
-              f,
-              prop.typeInfo,
-              filterInterfaceFunctionName,
-              typesByModule
-            )
+            createMetadataForTypeInfo(f, prop.typeInfo, filterInterfaceFunctionName, typesByModule)
           ),
         ],
         true
@@ -90,29 +62,24 @@ function createMetadataForTypeInfo(
   if (typeModule) {
     requiredType = `require('${typeModule}').${requiredType}`
   }
-  return f.createObjectLiteralExpression(
-    [
-      f.createPropertyAssignment(
-        'name',
-        f.createStringLiteral(typeInfo.name),
-      ),
-      f.createPropertyAssignment(
-        'type',
-        f.createCallExpression(filterInterfaceFunctionName, undefined, [
-          f.createStringLiteral(requiredType),
-        ])
-      ),
-      f.createPropertyAssignment(
-        'parameters',
-        f.createArrayLiteralExpression(
-          typeInfo.parameters.map((param) =>
-            createMetadataForTypeInfo(f, param, filterInterfaceFunctionName, typesByModule)
-          )
+  const properties: ts.ObjectLiteralElementLike[] = [
+    f.createPropertyAssignment('name', f.createStringLiteral(typeInfo.name)),
+    f.createPropertyAssignment(
+      'type',
+      f.createCallExpression(filterInterfaceFunctionName, undefined, [f.createStringLiteral(requiredType)])
+    ),
+    f.createPropertyAssignment(
+      'parameters',
+      f.createArrayLiteralExpression(
+        typeInfo.parameters.map((param) =>
+          createMetadataForTypeInfo(f, param, filterInterfaceFunctionName, typesByModule)
         )
-      ),
-    ],
-    true
-  )
+      )
+    ),
+  ]
+  if (typeInfo.isNullable) properties.push(f.createPropertyAssignment('isNullable', f.createTrue()))
+  if (typeInfo.isEnum) properties.push(f.createPropertyAssignment('isEnum', f.createTrue()))
+  return f.createObjectLiteralExpression(properties, true)
 }
 
 export function createFilterInterfaceFunction(
@@ -125,17 +92,7 @@ export function createFilterInterfaceFunction(
     undefined,
     filterInterfaceFunctionName,
     undefined,
-    [
-      f.createParameterDeclaration(
-        undefined,
-        undefined,
-        undefined,
-        'typeName',
-        undefined,
-        undefined,
-        undefined
-      ),
-    ],
+    [f.createParameterDeclaration(undefined, undefined, undefined, 'typeName', undefined, undefined, undefined)],
     undefined,
     f.createBlock(
       [
@@ -143,19 +100,14 @@ export function createFilterInterfaceFunction(
           f.createBlock(
             [
               f.createReturnStatement(
-                f.createCallExpression(f.createIdentifier('eval'), undefined, [
-                  f.createIdentifier('typeName'),
-                ])
+                f.createCallExpression(f.createIdentifier('eval'), undefined, [f.createIdentifier('typeName')])
               ),
             ],
             false
           ),
           f.createCatchClause(
             undefined,
-            f.createBlock(
-              [f.createReturnStatement(f.createIdentifier('undefined'))],
-              false
-            )
+            f.createBlock([f.createReturnStatement(f.createIdentifier('undefined'))], false)
           ),
           undefined
         ),

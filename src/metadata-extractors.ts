@@ -1,13 +1,15 @@
+import { createWrappedNode, SyntaxKind, Type } from 'ts-morph'
 import * as ts from 'typescript'
 
 export interface TypeInfo {
   name: string
   parameters: Array<TypeInfo>
+  isNullable: boolean
+  isEnum: boolean
 }
 
 export interface PropertyInfo {
   name: string
-  isMethod: boolean
   typeInfo: TypeInfo
 }
 
@@ -17,85 +19,34 @@ export interface ClassInfo {
   methods: Array<PropertyInfo>
 }
 
-export function getClassInfo(
-  classNode: ts.ClassDeclaration,
-  context: ts.TransformationContext,
-  checker: ts.TypeChecker
-): ClassInfo | undefined {
+export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: ts.TypeChecker): ClassInfo | undefined {
   if (!classNode.name) return
 
-  const properties = checker
-    .getPropertiesOfType(checker.getTypeAtLocation(classNode))
-    .map((prop) => {
-      return getPropertyInfo(prop, context, checker)
-    })
+  const node = createWrappedNode<ts.Node>(classNode, { typeChecker: checker }).asKindOrThrow(
+    SyntaxKind.ClassDeclaration
+  )
 
   return {
-    name: classNode.name.getText(),
-    fields: properties.filter((prop) => !prop.isMethod),
-    methods: properties.filter((prop) => prop.isMethod),
+    name: node.getNameOrThrow(),
+    fields: node.getInstanceProperties().map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType()) })),
+    methods: node.getInstanceMethods().map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType()) })),
   }
 }
 
-function getPropertyInfo(
-  prop: ts.Symbol,
-  context: ts.TransformationContext,
-  checker: ts.TypeChecker
-): PropertyInfo {
-  return {
-    name: prop.getName(),
-    isMethod: ts.isMethodDeclaration(prop.valueDeclaration),
-    typeInfo: getTypeInfo(prop.valueDeclaration, context),
-  }
-}
-
-function getTypeInfo(
-  node: ts.Node,
-  context: ts.TransformationContext
-): TypeInfo {
+function getTypeInfo(type: Type): TypeInfo {
+  const isNullable = type.isNullable()
+  type = type.getNonNullableType()
   const typeInfo: TypeInfo = {
-    name: 'undefined',
-    parameters: [],
+    name: type.getSymbol()?.getName() || type.getText(), // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
+    isNullable: isNullable,
+    isEnum: type.isEnum(),
+    parameters: type.getTypeArguments().map((a) => getTypeInfo(a)),
   }
-  if (hasNoTypeInfo(node)) {
-    return typeInfo
+  if (typeInfo.isEnum) {
+    typeInfo.parameters = type
+      .getUnionTypes()
+      .map((t) => ({ name: t.getSymbol()?.getName() || t.getText(), isNullable: false, isEnum: false, parameters: [] }))
   }
-
-  function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
-    if (!ts.isTypeNode(node)) {
-      return ts.visitEachChild(node, visitor, context)
-    }
-    if (ts.isTypeReferenceNode(node)) {
-      typeInfo.name = node.typeName.getText()
-      typeInfo.parameters =
-        node.typeArguments?.map((node) => getTypeInfo(node, context)) ?? []
-    } else if (ts.isFunctionTypeNode(node)) {
-      typeInfo.name = 'Function' // TODO: We could get more detailed here
-    } else {
-      typeInfo.name = normalizeTypeName(node.getText())
-    }
-
-    return node
-  }
-
-  ts.visitNode(node, visitor)
+  if (typeInfo.name.length > 0) typeInfo.name = typeInfo.name[0].toUpperCase() + typeInfo.name.slice(1)
   return typeInfo
-}
-
-function normalizeTypeName(name: string): string {
-  if (['string', 'number', 'boolean'].includes(name)) {
-    return name[0].toUpperCase() + name.slice(1)
-  }
-  return name
-}
-
-function hasNoTypeInfo(node: ts.Node): boolean {
-  return [
-    ts.SyntaxKind.AnyKeyword,
-    ts.SyntaxKind.NeverKeyword,
-    ts.SyntaxKind.SymbolKeyword,
-    ts.SyntaxKind.UndefinedKeyword,
-    ts.SyntaxKind.UnknownKeyword,
-    ts.SyntaxKind.VoidKeyword,
-  ].includes(node.kind)
 }

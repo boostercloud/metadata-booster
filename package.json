@@ -25,13 +25,16 @@
     "@typescript-eslint/eslint-plugin": "4.14.1",
     "@typescript-eslint/parser": "4.14.1",
     "eslint": "7.18.0",
-    "typescript": "4.1.3"
+    "reflect-metadata": "0.1.13",
+    "ts-morph": "11.0.0",
+    "ttypescript": "1.5.12",
+    "typescript": "4.3.5"
   },
   "scripts": {
     "lint:check": "eslint --ext '.js,.ts' **/*.ts",
     "lint:fix": "eslint --quiet --fix --ext '.js,.ts' **/*.ts",
     "compile": "tsc -b tsconfig.json",
     "prepack": "tsc -b tsconfig.json",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ttsc -p tsconfig.test.json"
   }
 }

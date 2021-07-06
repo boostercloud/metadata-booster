@@ -2,19 +2,19 @@
 export type AnyType = { new (...args: any[]): any }
 
 export interface TypeMetadata {
-    name: string
-    type: AnyType
-    parameters: Array<TypeMetadata>
+  name: string
+  type: AnyType
+  parameters: Array<TypeMetadata>
 }
 
 export interface PropertyMetadata {
-    name: string
-    typeInfo: TypeMetadata
+  name: string
+  typeInfo: TypeMetadata
 }
 
 export interface ClassMetadata {
-    name: string
-    type: AnyType
-    fields: Array<PropertyMetadata>
-    methods: Array<PropertyMetadata>
+  name: string
+  type: AnyType
+  fields: Array<PropertyMetadata>
+  methods: Array<PropertyMetadata>
 }

@@ -1,17 +1,10 @@
 import * as ts from 'typescript'
 import { getClassInfo } from './metadata-extractors'
-import {
-  createClassMetadataDecorator,
-  createFilterInterfaceFunction,
-} from './statement-creators'
+import { createClassMetadataDecorator, createFilterInterfaceFunction } from './statement-creators'
 
-const transformer: (
-  program: ts.Program
-) => ts.TransformerFactory<ts.SourceFile> = (program) => {
+const transformer: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile> = (program) => {
   const checker = program.getTypeChecker()
-  const transformerFactory: ts.TransformerFactory<ts.SourceFile> = (
-    context
-  ) => {
+  const transformerFactory: ts.TransformerFactory<ts.SourceFile> = (context) => {
     const f = context.factory
     const filterInterfaceFunctionName = f.createUniqueName('filterInterface')
     return (sourceFile) => {
@@ -30,8 +23,9 @@ const transformer: (
             namedBindings.elements.forEach((elem) => importedTypes[elem.name.getText()] = moduleName)
           }
         }
+
         if (ts.isClassDeclaration(node)) {
-          const classInfo = getClassInfo(node, context, checker)
+          const classInfo = getClassInfo(node, checker)
           if (classInfo) {
             const metadataDecorator = createClassMetadataDecorator(
               f,
@@ -40,19 +34,22 @@ const transformer: (
               importedTypes
             )
             const newDecorators = [...node.decorators ?? [], metadataDecorator]
-            return f.updateClassDeclaration(node, newDecorators, node.modifiers, node.name, node.typeParameters, node.heritageClauses, node.members)
+            return f.updateClassDeclaration(
+              node,
+              newDecorators,
+              node.modifiers,
+              node.name,
+              node.typeParameters,
+              node.heritageClauses,
+              node.members
+            )
           }
         }
         return ts.visitEachChild(node, visitor, context)
       }
       const modifiedSourceFile = ts.visitNode(sourceFile, visitor)
       return f.updateSourceFile(modifiedSourceFile, [
-        f.createImportDeclaration(
-          undefined,
-          undefined,
-          undefined,
-          f.createStringLiteral('reflect-metadata')
-        ),
+        f.createImportDeclaration(undefined, undefined, undefined, f.createStringLiteral('reflect-metadata')),
         ...modifiedSourceFile.statements,
         createFilterInterfaceFunction(f, filterInterfaceFunctionName),
       ])

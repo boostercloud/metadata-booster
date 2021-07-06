@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "./dist/test",
+    "rootDir": "./test",
     "importHelpers": true,
     "module": "commonjs",
     "strict": true,
@@ -14,9 +13,12 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
-    "experimentalDecorators": true
+    "experimentalDecorators": true,
+    "plugins": [
+      { "transform": "./src/index.ts" }
+    ]
   },
   "include": [
-    "src/**/*"
+    "test/**/*"
   ]
 }
