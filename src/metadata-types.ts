@@ -5,6 +5,8 @@ export interface TypeMetadata {
   name: string
   type: AnyType
   parameters: Array<TypeMetadata>
+  isNullable?: boolean
+  isEnum?: boolean
 }
 
 export interface PropertyMetadata {
