@@ -71,6 +71,9 @@ function getTypeInfo(
         node.typeArguments?.map((node) => getTypeInfo(node, context)) ?? []
     } else if (ts.isFunctionTypeNode(node)) {
       typeInfo.name = 'Function' // TODO: We could get more detailed here
+    } else if (ts.isArrayTypeNode(node)) {
+      typeInfo.name = Array.name
+      typeInfo.parameters = [getTypeInfo(node.elementType, context)]
     } else {
       typeInfo.name = normalizeTypeName(node.getText())
     }
