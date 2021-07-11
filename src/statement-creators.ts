@@ -57,7 +57,7 @@ function createMetadataForTypeInfo(
   filterInterfaceFunctionName: ts.Identifier,
   typesByModule: Record<string, string>
 ): ts.ObjectLiteralExpression {
-  let requiredType = typeInfo.name
+  let requiredType = typeInfo.baseName
   const typeModule = typesByModule[requiredType]
   if (typeModule) {
     requiredType = `require('${typeModule}').${requiredType}`
@@ -68,6 +68,8 @@ function createMetadataForTypeInfo(
       'type',
       f.createCallExpression(filterInterfaceFunctionName, undefined, [f.createStringLiteral(requiredType)])
     ),
+    f.createPropertyAssignment('typeOf', f.createStringLiteral(typeInfo.typeOf)),
+    f.createPropertyAssignment('isNullable', typeInfo.isNullable ? f.createTrue() : f.createFalse()),
     f.createPropertyAssignment(
       'parameters',
       f.createArrayLiteralExpression(
@@ -77,8 +79,6 @@ function createMetadataForTypeInfo(
       )
     ),
   ]
-  if (typeInfo.isNullable) properties.push(f.createPropertyAssignment('isNullable', f.createTrue()))
-  if (typeInfo.isEnum) properties.push(f.createPropertyAssignment('isEnum', f.createTrue()))
   return f.createObjectLiteralExpression(properties, true)
 }
 

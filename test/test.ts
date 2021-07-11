@@ -3,11 +3,6 @@
  * The result will be available in dist/test/test.js
  */
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const AnyDecorator: any = () => {}
-
-@AnyDecorator //We need to decorate the class to emit metadata
 class User {
   constructor(public name: string, public friends: Set<User>) {}
 }
@@ -18,12 +13,25 @@ enum Size {
   Big,
 }
 
-@AnyDecorator //We need to decorate the class to emit metadata
 class Car {
-  constructor(public driversByName: Map<string, User>, public driverNames: string[], public size?: Size) {}
+  constructor(public driversMap: Map<string, User>, public size: Size) {}
 
   public engageAutoPilot(): Promise<boolean> {
     // Asume a long task here
     return Promise.resolve(true)
   }
+}
+
+class Test {
+  constructor(
+    public array0: string[],
+    public array1: Array<string>,
+    public union0: Array<string> | Array<number>,
+    public intersection0: Array<string> & Array<number>,
+    public func0: (arg0: string) => void,
+    public any0: any,
+    public unknown0: unknown,
+    public optional0: string | null | undefined,
+    public optional1?: string
+  ) {}
 }

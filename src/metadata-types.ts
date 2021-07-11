@@ -1,12 +1,25 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type AnyType = { new (...args: any[]): any }
 
+export enum TypeOf {
+  String = 'String',
+  Number = 'Number',
+  Boolean = 'Boolean',
+  Enum = 'Enum',
+  Union = 'Union',
+  Intersection = 'Intersection',
+  Function = 'Function',
+  Class = 'Class',
+  Array = 'Array',
+  Object = 'Object',
+  Other = 'Other',
+}
 export interface TypeMetadata {
   name: string
   type: AnyType
+  typeOf: TypeOf
   parameters: Array<TypeMetadata>
-  isNullable?: boolean
-  isEnum?: boolean
+  isNullable: boolean
 }
 
 export interface PropertyMetadata {

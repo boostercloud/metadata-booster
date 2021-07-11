@@ -13,12 +13,7 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "forceConsistentCasingInFileNames": true,
-    "experimentalDecorators": true,
-    "plugins": [
-      { "transform": "./src/index.ts" }
-    ]
+    "plugins": [{ "transform": "./src/index.ts" }]
   },
-  "include": [
-    "test/**/*"
-  ]
+  "include": ["test/**/*"]
 }
