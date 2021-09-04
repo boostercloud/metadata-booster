@@ -1,12 +1,12 @@
 import { createWrappedNode, SyntaxKind, Type } from 'ts-morph'
 import * as ts from 'typescript'
-import { TypeOf } from './metadata-types'
+import { TypeGroup } from './metadata-types'
 
 export interface TypeInfo {
   name: string
   baseName: string
   parameters: Array<TypeInfo>
-  typeOf: TypeOf
+  typeGroup: TypeGroup
   isNullable: boolean
 }
 
@@ -36,33 +36,38 @@ export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: 
 }
 
 function getTypeInfo(type: Type): TypeInfo {
-  const typeOfTuples: [(t: Type) => boolean, TypeOf][] = [
-    [(t) => t.isString(), TypeOf.String],
-    [(t) => t.isNumber(), TypeOf.Number],
-    [(t) => t.isBoolean(), TypeOf.Boolean],
-    [(t) => t.isEnum(), TypeOf.Enum],
-    [(t) => t.isUnion(), TypeOf.Union],
-    [(t) => t.isIntersection(), TypeOf.Intersection],
-    [(t) => t.isClass(), TypeOf.Class],
-    [(t) => t.isArray(), TypeOf.Array],
-    [(t) => t.getCallSignatures().length > 0, TypeOf.Function],
-    [(t) => t.isObject(), TypeOf.Object],
+  const typeGroupTuples: [(t: Type) => boolean, TypeGroup][] = [
+    [(t) => t.isString(), TypeGroup.String],
+    [(t) => t.isNumber(), TypeGroup.Number],
+    [(t) => t.isBoolean(), TypeGroup.Boolean],
+    [(t) => t.isEnum(), TypeGroup.Enum],
+    [(t) => t.isUnion(), TypeGroup.Union],
+    [(t) => t.isIntersection(), TypeGroup.Intersection],
+    [(t) => t.isClass(), TypeGroup.Class],
+    [(t) => t.isArray(), TypeGroup.Array],
+    [(t) => t.getCallSignatures().length > 0, TypeGroup.Function],
+    [(t) => t.isObject(), TypeGroup.Object],
   ]
   const isNullable = type.isNullable()
   type = type.getNonNullableType()
   const typeInfo: TypeInfo = {
     name: type.getText(),
     baseName: '',
-    typeOf: typeOfTuples.find(([fn]) => fn(type))?.[1] || TypeOf.Other,
+    typeGroup: typeGroupTuples.find(([fn]) => fn(type))?.[1] || TypeGroup.Other,
     isNullable: isNullable,
     parameters: [],
   }
-  switch (typeInfo.typeOf) {
-    case TypeOf.Enum:
-    case TypeOf.Union:
+  switch (typeInfo.typeGroup) {
+    case TypeGroup.Enum:
+      typeInfo.parameters = type
+        .getUnionTypes()
+        .map((t) => getTypeInfo(t))
+        .map((t) => ({ ...t, name: t.baseName, baseName: t.name })) // e.g. { name: "Small", baseName: "Size.Small" }
+      break
+    case TypeGroup.Union:
       typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t))
       break
-    case TypeOf.Intersection:
+    case TypeGroup.Intersection:
       typeInfo.parameters = type.getIntersectionTypes().map((t) => getTypeInfo(t))
       break
     default:
@@ -70,11 +75,11 @@ function getTypeInfo(type: Type): TypeInfo {
   }
 
   // baseName is used for referencing the type in the metadata
-  if ([TypeOf.Class, TypeOf.Object, TypeOf.Other].includes(typeInfo.typeOf)) {
+  if ([TypeGroup.Enum, TypeGroup.Class, TypeGroup.Object, TypeGroup.Other].includes(typeInfo.typeGroup)) {
     // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
     typeInfo.baseName = type.getSymbol()?.getName() || type.getText()
   } else {
-    typeInfo.baseName = typeInfo.typeOf
+    typeInfo.baseName = typeInfo.typeGroup
   }
 
   return typeInfo

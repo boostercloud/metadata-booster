@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export type AnyType = { new (...args: any[]): any }
 
-export enum TypeOf {
+export enum TypeGroup {
   String = 'String',
   Number = 'Number',
   Boolean = 'Boolean',
@@ -17,7 +17,7 @@ export enum TypeOf {
 export interface TypeMetadata {
   name: string
   type: AnyType
-  typeOf: TypeOf
+  typeGroup: TypeGroup
   parameters: Array<TypeMetadata>
   isNullable: boolean
 }

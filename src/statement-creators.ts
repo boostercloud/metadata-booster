@@ -68,7 +68,7 @@ function createMetadataForTypeInfo(
       'type',
       f.createCallExpression(filterInterfaceFunctionName, undefined, [f.createStringLiteral(requiredType)])
     ),
-    f.createPropertyAssignment('typeOf', f.createStringLiteral(typeInfo.typeOf)),
+    f.createPropertyAssignment('typeGroup', f.createStringLiteral(typeInfo.typeGroup)),
     f.createPropertyAssignment('isNullable', typeInfo.isNullable ? f.createTrue() : f.createFalse()),
     f.createPropertyAssignment(
       'parameters',
