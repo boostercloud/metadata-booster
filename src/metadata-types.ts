@@ -10,16 +10,19 @@ export enum TypeGroup {
   Intersection = 'Intersection',
   Function = 'Function',
   Class = 'Class',
+  Interface = 'Interface',
+  Type = 'Type',
   Array = 'Array',
   Object = 'Object',
   Other = 'Other',
 }
 export interface TypeMetadata {
   name: string
-  type: AnyType
+  type: AnyType | undefined
   typeGroup: TypeGroup
   parameters: Array<TypeMetadata>
   isNullable: boolean
+  importPath?: string
 }
 
 export interface PropertyMetadata {

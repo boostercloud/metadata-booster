@@ -1,4 +1,4 @@
-import { createWrappedNode, SyntaxKind, Type } from 'ts-morph'
+import { createWrappedNode, Node, SyntaxKind, Type } from 'ts-morph'
 import * as ts from 'typescript'
 import { TypeGroup } from './metadata-types'
 
@@ -30,12 +30,12 @@ export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: 
 
   return {
     name: node.getNameOrThrow(),
-    fields: node.getInstanceProperties().map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType()) })),
-    methods: node.getInstanceMethods().map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType()) })),
+    fields: node.getInstanceProperties().map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType(), p) })),
+    methods: node.getInstanceMethods().map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType(), m) })),
   }
 }
 
-function getTypeInfo(type: Type): TypeInfo {
+function getTypeInfo(type: Type, node?: Node): TypeInfo {
   const typeGroupTuples: [(t: Type) => boolean, TypeGroup][] = [
     [(t) => t.isString(), TypeGroup.String],
     [(t) => t.isNumber(), TypeGroup.Number],
@@ -44,6 +44,8 @@ function getTypeInfo(type: Type): TypeInfo {
     [(t) => t.isUnion(), TypeGroup.Union],
     [(t) => t.isIntersection(), TypeGroup.Intersection],
     [(t) => t.isClass(), TypeGroup.Class],
+    [(t) => t.isInterface(), TypeGroup.Interface],
+    [(t) => t.getAliasSymbol() != null, TypeGroup.Type],
     [(t) => t.isArray(), TypeGroup.Array],
     [(t) => t.getCallSignatures().length > 0, TypeGroup.Function],
     [(t) => t.isObject(), TypeGroup.Object],
@@ -51,7 +53,7 @@ function getTypeInfo(type: Type): TypeInfo {
   const isNullable = type.isNullable()
   type = type.getNonNullableType()
   const typeInfo: TypeInfo = {
-    name: type.getText(),
+    name: type.getText(node), // node is passed for better name printing: https://github.com/dsherret/ts-morph/issues/907
     baseName: '',
     typeGroup: typeGroupTuples.find(([fn]) => fn(type))?.[1] || TypeGroup.Other,
     isNullable: isNullable,
@@ -65,19 +67,23 @@ function getTypeInfo(type: Type): TypeInfo {
         .map((t) => ({ ...t, name: t.baseName, baseName: t.name })) // e.g. { name: "Small", baseName: "Size.Small" }
       break
     case TypeGroup.Union:
-      typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t))
+      typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t, node))
       break
     case TypeGroup.Intersection:
-      typeInfo.parameters = type.getIntersectionTypes().map((t) => getTypeInfo(t))
+      typeInfo.parameters = type.getIntersectionTypes().map((t) => getTypeInfo(t, node))
       break
     default:
-      typeInfo.parameters = type.getTypeArguments().map((a) => getTypeInfo(a))
+      typeInfo.parameters = type.getTypeArguments().map((a) => getTypeInfo(a, node))
   }
 
   // baseName is used for referencing the type in the metadata
-  if ([TypeGroup.Enum, TypeGroup.Class, TypeGroup.Object, TypeGroup.Other].includes(typeInfo.typeGroup)) {
+  if (
+    [TypeGroup.Enum, TypeGroup.Class, TypeGroup.Interface, TypeGroup.Type, TypeGroup.Object, TypeGroup.Other].includes(
+      typeInfo.typeGroup
+    )
+  ) {
     // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
-    typeInfo.baseName = type.getSymbol()?.getName() || type.getText()
+    typeInfo.baseName = type.getSymbol()?.getName() || type.getText(node)
   } else {
     typeInfo.baseName = typeInfo.typeGroup
   }

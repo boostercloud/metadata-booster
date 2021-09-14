@@ -79,6 +79,7 @@ function createMetadataForTypeInfo(
       )
     ),
   ]
+  if (typeModule) properties.push(f.createPropertyAssignment('importPath', f.createStringLiteral(typeModule)))
   return f.createObjectLiteralExpression(properties, true)
 }
 
