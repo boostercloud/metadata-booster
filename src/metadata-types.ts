@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export type AnyType = { new (...args: any[]): any }
+export type ClassType = { new (...args: unknown[]): unknown }
 
 export enum TypeGroup {
   String = 'String',
@@ -18,11 +17,12 @@ export enum TypeGroup {
 }
 export interface TypeMetadata {
   name: string
-  type: AnyType | undefined
   typeGroup: TypeGroup
   parameters: Array<TypeMetadata>
   isNullable: boolean
+  typeName?: string
   importPath?: string
+  type?: ClassType
 }
 
 export interface PropertyMetadata {
@@ -32,7 +32,7 @@ export interface PropertyMetadata {
 
 export interface ClassMetadata {
   name: string
-  type: AnyType
+  type: ClassType
   fields: Array<PropertyMetadata>
   methods: Array<PropertyMetadata>
 }

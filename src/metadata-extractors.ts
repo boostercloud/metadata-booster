@@ -3,8 +3,8 @@ import * as ts from 'typescript'
 import { TypeGroup } from './metadata-types'
 
 export interface TypeInfo {
-  name: string
-  baseName: string
+  name: string // e.g. Array<string>
+  typeName: string | null // e.g. Array
   parameters: Array<TypeInfo>
   typeGroup: TypeGroup
   isNullable: boolean
@@ -54,17 +54,14 @@ function getTypeInfo(type: Type, node?: Node): TypeInfo {
   type = type.getNonNullableType()
   const typeInfo: TypeInfo = {
     name: type.getText(node), // node is passed for better name printing: https://github.com/dsherret/ts-morph/issues/907
-    baseName: '',
+    typeName: '',
     typeGroup: typeGroupTuples.find(([fn]) => fn(type))?.[1] || TypeGroup.Other,
-    isNullable: isNullable,
+    isNullable,
     parameters: [],
   }
   switch (typeInfo.typeGroup) {
     case TypeGroup.Enum:
-      typeInfo.parameters = type
-        .getUnionTypes()
-        .map((t) => getTypeInfo(t))
-        .map((t) => ({ ...t, name: t.baseName, baseName: t.name })) // e.g. { name: "Small", baseName: "Size.Small" }
+      typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t))
       break
     case TypeGroup.Union:
       typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t, node))
@@ -76,17 +73,38 @@ function getTypeInfo(type: Type, node?: Node): TypeInfo {
       typeInfo.parameters = type.getTypeArguments().map((a) => getTypeInfo(a, node))
   }
 
-  // baseName is used for referencing the type in the metadata
-  if (
-    [TypeGroup.Enum, TypeGroup.Class, TypeGroup.Interface, TypeGroup.Type, TypeGroup.Object, TypeGroup.Other].includes(
-      typeInfo.typeGroup
-    )
-  ) {
-    // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
-    typeInfo.baseName = type.getSymbol()?.getName() || type.getText(node)
-  } else {
-    typeInfo.baseName = typeInfo.typeGroup
+  // typeName is used for referencing the type in the metadata
+  switch (typeInfo.typeGroup) {
+    case TypeGroup.String:
+    case TypeGroup.Number:
+    case TypeGroup.Boolean:
+      typeInfo.typeName = typeInfo.typeGroup
+      break
+    case TypeGroup.Union:
+    case TypeGroup.Intersection:
+      typeInfo.typeName = null
+      break
+    case TypeGroup.Enum:
+    case TypeGroup.Class:
+    case TypeGroup.Array:
+      // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
+      typeInfo.typeName = type.getSymbol()?.getName() || ''
+      break
+    case TypeGroup.Interface:
+    case TypeGroup.Type:
+    case TypeGroup.Function:
+    case TypeGroup.Object:
+    case TypeGroup.Other:
+      if (type.isEnumLiteral()) {
+        typeInfo.name = type.getSymbol()?.getName() || '' // e.g. "Small"
+        typeInfo.typeName = null
+      } else {
+        typeInfo.typeName = 'Object'
+      }
+      break
   }
+
+  if (typeInfo.typeName === '') throw new Error(`Could not extract typeName for type ${JSON.stringify(typeInfo)}`)
 
   return typeInfo
 }
