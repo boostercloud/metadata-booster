@@ -31,7 +31,7 @@ export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: 
   return {
     name: node.getNameOrThrow(),
     fields: node.getInstanceProperties().map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType(), p) })),
-    methods: node.getInstanceMethods().map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType(), m) })),
+    methods: node.getMethods().map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType(), m) })),
   }
 }
 
@@ -90,17 +90,21 @@ function getTypeInfo(type: Type, node?: Node): TypeInfo {
       // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
       typeInfo.typeName = type.getSymbol()?.getName() || ''
       break
+    case TypeGroup.Object:
+      typeInfo.typeName = type.getSymbol()?.getName() || ''
+      if (typeInfo.typeName === '__type') {
+        // This happens for literal objects like `{ a: string, b: { c: string } }`
+        typeInfo.typeName = 'Object'
+      }
+      break
     case TypeGroup.Interface:
     case TypeGroup.Type:
     case TypeGroup.Function:
-    case TypeGroup.Object:
     case TypeGroup.Other:
       if (type.isEnumLiteral()) {
         typeInfo.name = type.getSymbol()?.getName() || '' // e.g. "Small"
-        typeInfo.typeName = null
-      } else {
-        typeInfo.typeName = 'Object'
       }
+      typeInfo.typeName = null
       break
   }
 
