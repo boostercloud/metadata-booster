@@ -19,7 +19,7 @@ const transformer: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>
           }
           const namedBindings = node.importClause?.namedBindings
           if (namedBindings && 'elements' in namedBindings) {
-            namedBindings.elements.forEach((elem) => (importedTypes[elem.name.getText()] = moduleName))
+            namedBindings.elements.forEach((elem) => importedTypes[elem.name.getText()] = moduleName)
           }
         }
 
@@ -27,7 +27,7 @@ const transformer: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>
           const classInfo = getClassInfo(node, checker)
           if (classInfo) {
             const metadataDecorator = createClassMetadataDecorator(f, classInfo, importedTypes)
-            const newDecorators = [...(node.decorators ?? []), metadataDecorator]
+            const newDecorators = [...node.decorators ?? [], metadataDecorator]
             return f.updateClassDeclaration(
               node,
               newDecorators,

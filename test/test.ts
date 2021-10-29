@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /**
  * This file is transpiled with metadata when executing "npm run test".
  * The result will be available in dist/test/test.js
@@ -29,6 +30,7 @@ class Test {
     public union0: Array<string> | Array<number>,
     public intersection0: Array<string> & Array<number>,
     public func0: (arg0: string) => void,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public any0: any,
     public unknown0: unknown,
     public optional0: string | null | undefined,
