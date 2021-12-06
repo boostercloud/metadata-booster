@@ -53,3 +53,4 @@ const transformer: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>
 }
 
 export default transformer
+export * from './metadata-types'
