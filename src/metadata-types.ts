@@ -1,20 +1,21 @@
 export type ClassType = { new (...args: unknown[]): unknown }
 
-export enum TypeGroup {
-  String = 'String',
-  Number = 'Number',
-  Boolean = 'Boolean',
-  Enum = 'Enum',
-  Union = 'Union',
-  Intersection = 'Intersection',
-  Function = 'Function',
-  Class = 'Class',
-  Interface = 'Interface',
-  Type = 'Type',
-  Array = 'Array',
-  Object = 'Object',
-  Other = 'Other',
-}
+// type instead of enum to be able to install this package as a devDependency and not a production dependency
+export type TypeGroup =
+  | 'String'
+  | 'Number'
+  | 'Boolean'
+  | 'Enum'
+  | 'Union'
+  | 'Intersection'
+  | 'Function'
+  | 'Class'
+  | 'Interface'
+  | 'Type'
+  | 'Array'
+  | 'Object'
+  | 'Other'
+
 export interface TypeMetadata {
   name: string
   typeGroup: TypeGroup

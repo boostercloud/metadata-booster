@@ -37,36 +37,36 @@ export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: 
 
 function getTypeInfo(type: Type, node?: Node): TypeInfo {
   const typeGroupTuples: [(t: Type) => boolean, TypeGroup][] = [
-    [(t) => t.isString(), TypeGroup.String],
-    [(t) => t.isNumber(), TypeGroup.Number],
-    [(t) => t.isBoolean(), TypeGroup.Boolean],
-    [(t) => t.isEnum(), TypeGroup.Enum],
-    [(t) => t.isUnion(), TypeGroup.Union],
-    [(t) => t.isIntersection(), TypeGroup.Intersection],
-    [(t) => t.isClass(), TypeGroup.Class],
-    [(t) => t.isInterface(), TypeGroup.Interface],
-    [(t) => t.getAliasSymbol() != null, TypeGroup.Type],
-    [(t) => t.isArray(), TypeGroup.Array],
-    [(t) => t.getCallSignatures().length > 0, TypeGroup.Function],
-    [(t) => t.isObject(), TypeGroup.Object],
+    [(t) => t.isString(), 'String'],
+    [(t) => t.isNumber(), 'Number'],
+    [(t) => t.isBoolean(), 'Boolean'],
+    [(t) => t.isEnum(), 'Enum'],
+    [(t) => t.isUnion(), 'Union'],
+    [(t) => t.isIntersection(), 'Intersection'],
+    [(t) => t.isClass(), 'Class'],
+    [(t) => t.isInterface(), 'Interface'],
+    [(t) => t.getAliasSymbol() != null, 'Type'],
+    [(t) => t.isArray(), 'Array'],
+    [(t) => t.getCallSignatures().length > 0, 'Function'],
+    [(t) => t.isObject(), 'Object'],
   ]
   const isNullable = type.isNullable()
   type = type.getNonNullableType()
   const typeInfo: TypeInfo = {
     name: type.getText(node), // node is passed for better name printing: https://github.com/dsherret/ts-morph/issues/907
     typeName: '',
-    typeGroup: typeGroupTuples.find(([fn]) => fn(type))?.[1] || TypeGroup.Other,
+    typeGroup: typeGroupTuples.find(([fn]) => fn(type))?.[1] || 'Other',
     isNullable,
     parameters: [],
   }
   switch (typeInfo.typeGroup) {
-    case TypeGroup.Enum:
+    case 'Enum':
       typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t))
       break
-    case TypeGroup.Union:
+    case 'Union':
       typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t, node))
       break
-    case TypeGroup.Intersection:
+    case 'Intersection':
       typeInfo.parameters = type.getIntersectionTypes().map((t) => getTypeInfo(t, node))
       break
     default:
@@ -75,32 +75,32 @@ function getTypeInfo(type: Type, node?: Node): TypeInfo {
 
   // typeName is used for referencing the type in the metadata
   switch (typeInfo.typeGroup) {
-    case TypeGroup.String:
-    case TypeGroup.Number:
-    case TypeGroup.Boolean:
+    case 'String':
+    case 'Number':
+    case 'Boolean':
       typeInfo.typeName = typeInfo.typeGroup
       break
-    case TypeGroup.Union:
-    case TypeGroup.Intersection:
+    case 'Union':
+    case 'Intersection':
       typeInfo.typeName = null
       break
-    case TypeGroup.Enum:
-    case TypeGroup.Class:
-    case TypeGroup.Array:
+    case 'Enum':
+    case 'Class':
+    case 'Array':
       // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
       typeInfo.typeName = type.getSymbol()?.getName() || ''
       break
-    case TypeGroup.Object:
+    case 'Object':
       typeInfo.typeName = type.getSymbol()?.getName() || ''
       if (typeInfo.typeName === '__type') {
         // This happens for literal objects like `{ a: string, b: { c: string } }`
         typeInfo.typeName = 'Object'
       }
       break
-    case TypeGroup.Interface:
-    case TypeGroup.Type:
-    case TypeGroup.Function:
-    case TypeGroup.Other:
+    case 'Interface':
+    case 'Type':
+    case 'Function':
+    case 'Other':
       if (type.isEnumLiteral()) {
         typeInfo.name = type.getSymbol()?.getName() || '' // e.g. "Small"
       }
