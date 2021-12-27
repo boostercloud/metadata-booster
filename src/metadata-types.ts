@@ -1,20 +1,39 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export type AnyType = { new (...args: any[]): any }
+export type ClassType = { new (...args: unknown[]): unknown }
+
+// type instead of enum to be able to install this package as a devDependency and not a production dependency
+export type TypeGroup =
+  | 'String'
+  | 'Number'
+  | 'Boolean'
+  | 'Enum'
+  | 'Union'
+  | 'Intersection'
+  | 'Function'
+  | 'Class'
+  | 'Interface'
+  | 'Type'
+  | 'Array'
+  | 'Object'
+  | 'Other'
 
 export interface TypeMetadata {
-    name: string
-    type: AnyType
-    parameters: Array<TypeMetadata>
+  name: string
+  typeGroup: TypeGroup
+  parameters: Array<TypeMetadata>
+  isNullable: boolean
+  typeName?: string
+  importPath?: string
+  type?: ClassType
 }
 
 export interface PropertyMetadata {
-    name: string
-    typeInfo: TypeMetadata
+  name: string
+  typeInfo: TypeMetadata
 }
 
 export interface ClassMetadata {
-    name: string
-    type: AnyType
-    fields: Array<PropertyMetadata>
-    methods: Array<PropertyMetadata>
+  name: string
+  type: ClassType
+  fields: Array<PropertyMetadata>
+  methods: Array<PropertyMetadata>
 }

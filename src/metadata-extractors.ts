@@ -1,13 +1,17 @@
+import { createWrappedNode, Node, SyntaxKind, Type } from 'ts-morph'
 import * as ts from 'typescript'
+import { TypeGroup } from './metadata-types'
 
 export interface TypeInfo {
-  name: string
+  name: string // e.g. Array<string>
+  typeName: string | null // e.g. Array
   parameters: Array<TypeInfo>
+  typeGroup: TypeGroup
+  isNullable: boolean
 }
 
 export interface PropertyInfo {
   name: string
-  isMethod: boolean
   typeInfo: TypeInfo
 }
 
@@ -17,88 +21,94 @@ export interface ClassInfo {
   methods: Array<PropertyInfo>
 }
 
-export function getClassInfo(
-  classNode: ts.ClassDeclaration,
-  context: ts.TransformationContext,
-  checker: ts.TypeChecker
-): ClassInfo | undefined {
+export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: ts.TypeChecker): ClassInfo | undefined {
   if (!classNode.name) return
 
-  const properties = checker
-    .getPropertiesOfType(checker.getTypeAtLocation(classNode))
-    .map((prop) => {
-      return getPropertyInfo(prop, context, checker)
-    })
+  const node = createWrappedNode<ts.Node>(classNode, { typeChecker: checker }).asKindOrThrow(
+    SyntaxKind.ClassDeclaration
+  )
 
   return {
-    name: classNode.name.getText(),
-    fields: properties.filter((prop) => !prop.isMethod),
-    methods: properties.filter((prop) => prop.isMethod),
+    name: node.getNameOrThrow(),
+    fields: node.getInstanceProperties().map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType(), p) })),
+    methods: node.getMethods().map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType(), m) })),
   }
 }
 
-function getPropertyInfo(
-  prop: ts.Symbol,
-  context: ts.TransformationContext,
-  checker: ts.TypeChecker
-): PropertyInfo {
-  return {
-    name: prop.getName(),
-    isMethod: ts.isMethodDeclaration(prop.valueDeclaration),
-    typeInfo: getTypeInfo(prop.valueDeclaration, context),
-  }
-}
-
-function getTypeInfo(
-  node: ts.Node,
-  context: ts.TransformationContext
-): TypeInfo {
+function getTypeInfo(type: Type, node?: Node): TypeInfo {
+  const typeGroupTuples: [(t: Type) => boolean, TypeGroup][] = [
+    [(t) => t.isString(), 'String'],
+    [(t) => t.isNumber(), 'Number'],
+    [(t) => t.isBoolean(), 'Boolean'],
+    [(t) => t.isEnum(), 'Enum'],
+    [(t) => t.isUnion(), 'Union'],
+    [(t) => t.isIntersection(), 'Intersection'],
+    [(t) => t.isClass(), 'Class'],
+    [(t) => t.isInterface(), 'Interface'],
+    [(t) => t.getAliasSymbol() != null, 'Type'],
+    [(t) => t.isArray(), 'Array'],
+    [(t) => t.getCallSignatures().length > 0, 'Function'],
+    [(t) => t.isObject(), 'Object'],
+  ]
+  const isNullable = type.isNullable()
+  type = type.getNonNullableType()
   const typeInfo: TypeInfo = {
-    name: 'undefined',
+    name: type.getText(node), // node is passed for better name printing: https://github.com/dsherret/ts-morph/issues/907
+    typeName: '',
+    typeGroup: typeGroupTuples.find(([fn]) => fn(type))?.[1] || 'Other',
+    isNullable,
     parameters: [],
   }
-  if (hasNoTypeInfo(node)) {
-    return typeInfo
+  switch (typeInfo.typeGroup) {
+    case 'Enum':
+      typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t))
+      break
+    case 'Union':
+      typeInfo.parameters = type.getUnionTypes().map((t) => getTypeInfo(t, node))
+      break
+    case 'Intersection':
+      typeInfo.parameters = type.getIntersectionTypes().map((t) => getTypeInfo(t, node))
+      break
+    default:
+      typeInfo.parameters = type.getTypeArguments().map((a) => getTypeInfo(a, node))
   }
 
-  function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
-    if (!ts.isTypeNode(node)) {
-      return ts.visitEachChild(node, visitor, context)
-    }
-    if (ts.isTypeReferenceNode(node)) {
-      typeInfo.name = node.typeName.getText()
-      typeInfo.parameters =
-        node.typeArguments?.map((node) => getTypeInfo(node, context)) ?? []
-    } else if (ts.isFunctionTypeNode(node)) {
-      typeInfo.name = 'Function' // TODO: We could get more detailed here
-    } else if (ts.isArrayTypeNode(node)) {
-      typeInfo.name = Array.name
-      typeInfo.parameters = [getTypeInfo(node.elementType, context)]
-    } else {
-      typeInfo.name = normalizeTypeName(node.getText())
-    }
-
-    return node
+  // typeName is used for referencing the type in the metadata
+  switch (typeInfo.typeGroup) {
+    case 'String':
+    case 'Number':
+    case 'Boolean':
+      typeInfo.typeName = typeInfo.typeGroup
+      break
+    case 'Union':
+    case 'Intersection':
+      typeInfo.typeName = null
+      break
+    case 'Enum':
+    case 'Class':
+    case 'Array':
+      // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
+      typeInfo.typeName = type.getSymbol()?.getName() || ''
+      break
+    case 'Object':
+      typeInfo.typeName = type.getSymbol()?.getName() || ''
+      if (typeInfo.typeName === '__type') {
+        // This happens for literal objects like `{ a: string, b: { c: string } }`
+        typeInfo.typeName = 'Object'
+      }
+      break
+    case 'Interface':
+    case 'Type':
+    case 'Function':
+    case 'Other':
+      if (type.isEnumLiteral()) {
+        typeInfo.name = type.getSymbol()?.getName() || '' // e.g. "Small"
+      }
+      typeInfo.typeName = null
+      break
   }
 
-  ts.visitNode(node, visitor)
+  if (typeInfo.typeName === '') throw new Error(`Could not extract typeName for type ${JSON.stringify(typeInfo)}`)
+
   return typeInfo
-}
-
-function normalizeTypeName(name: string): string {
-  if (['string', 'number', 'boolean'].includes(name)) {
-    return name[0].toUpperCase() + name.slice(1)
-  }
-  return name
-}
-
-function hasNoTypeInfo(node: ts.Node): boolean {
-  return [
-    ts.SyntaxKind.AnyKeyword,
-    ts.SyntaxKind.NeverKeyword,
-    ts.SyntaxKind.SymbolKeyword,
-    ts.SyntaxKind.UndefinedKeyword,
-    ts.SyntaxKind.UnknownKeyword,
-    ts.SyntaxKind.VoidKeyword,
-  ].includes(node.kind)
 }

@@ -1,9 +1,8 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "sourceMap": true,
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "outDir": "./dist/test",
+    "rootDir": "./test",
     "importHelpers": true,
     "module": "commonjs",
     "strict": true,
@@ -13,9 +12,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "plugins": [{ "transform": "./src/index.ts" }]
   },
-  "include": [
-    "src/**/*"
-  ]
+  "include": ["test/**/*"]
 }
