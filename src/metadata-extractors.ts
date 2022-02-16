@@ -48,6 +48,7 @@ function getTypeInfo(type: Type, node?: Node): TypeInfo {
     [(t) => t.getAliasSymbol() != null, 'Type'],
     [(t) => t.isArray(), 'Array'],
     [(t) => t.getCallSignatures().length > 0, 'Function'],
+    [(t) => isReadonlyArray(t), 'ReadonlyArray'],
     [(t) => t.isObject(), 'Object'],
   ]
   const isNullable = type.isNullable()
@@ -86,6 +87,7 @@ function getTypeInfo(type: Type, node?: Node): TypeInfo {
       break
     case 'Enum':
     case 'Class':
+    case 'ReadonlyArray':
     case 'Array':
       // getSymbol() is used for complex types, in which cases getText() returns too much information (e.g. Map<User> instead of just Map)
       typeInfo.typeName = type.getSymbol()?.getName() || ''
@@ -111,4 +113,8 @@ function getTypeInfo(type: Type, node?: Node): TypeInfo {
   if (typeInfo.typeName === '') throw new Error(`Could not extract typeName for type ${JSON.stringify(typeInfo)}`)
 
   return typeInfo
+}
+
+function isReadonlyArray(t: Type): boolean {
+  return t.isObject() && (t.getSymbol()?.getName() || '') === 'ReadonlyArray'
 }
