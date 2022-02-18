@@ -14,6 +14,7 @@ export type TypeGroup =
   | 'Type'
   | 'Array'
   | 'Object'
+  | 'ReadonlyArray'
   | 'Other'
 
 export interface TypeMetadata {

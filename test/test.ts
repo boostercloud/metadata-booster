@@ -34,6 +34,7 @@ class Test {
     public any0: any,
     public unknown0: unknown,
     public optional0: string | null | undefined,
-    public optional1?: string
+    public optional1?: string,
+    public readonlyArray?: ReadonlyArray<string>,
   ) {}
 }

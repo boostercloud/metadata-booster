@@ -4,6 +4,7 @@ import { ClassInfo, PropertyInfo, TypeInfo } from './metadata-extractors'
 export function createClassMetadataDecorator(
   f: ts.NodeFactory,
   classInfo: ClassInfo,
+  filterInterfaceFunctionName: ts.Identifier,
   typesByModule: Record<string, string>
 ): ts.Decorator {
   return f.createDecorator(
@@ -13,8 +14,8 @@ export function createClassMetadataDecorator(
         [
           f.createPropertyAssignment('name', f.createStringLiteral(classInfo.name)),
           f.createPropertyAssignment('type', f.createIdentifier(classInfo.name)),
-          f.createPropertyAssignment('fields', createPropertiesMetadata(f, classInfo.fields, typesByModule)),
-          f.createPropertyAssignment('methods', createPropertiesMetadata(f, classInfo.methods, typesByModule)),
+          f.createPropertyAssignment('fields', createPropertiesMetadata(f, classInfo.fields, filterInterfaceFunctionName, typesByModule)),
+          f.createPropertyAssignment('methods', createPropertiesMetadata(f, classInfo.methods, filterInterfaceFunctionName, typesByModule)),
         ],
         true
       ),
@@ -25,6 +26,7 @@ export function createClassMetadataDecorator(
 function createPropertiesMetadata(
   f: ts.NodeFactory,
   properties: Array<PropertyInfo>,
+  filterInterfaceFunctionName: ts.Identifier,
   typesByModule: Record<string, string>
 ): ts.ArrayLiteralExpression {
   return f.createArrayLiteralExpression(
@@ -32,7 +34,7 @@ function createPropertiesMetadata(
       return f.createObjectLiteralExpression(
         [
           f.createPropertyAssignment('name', f.createStringLiteral(prop.name)),
-          f.createPropertyAssignment('typeInfo', createMetadataForTypeInfo(f, prop.typeInfo, typesByModule)),
+          f.createPropertyAssignment('typeInfo', createMetadataForTypeInfo(f, prop.typeInfo, filterInterfaceFunctionName, typesByModule)),
         ],
         true
       )
@@ -43,6 +45,7 @@ function createPropertiesMetadata(
 function createMetadataForTypeInfo(
   f: ts.NodeFactory,
   typeInfo: TypeInfo,
+  filterInterfaceFunctionName: ts.Identifier,
   typesByModule: Record<string, string>
 ): ts.ObjectLiteralExpression {
   const typeModule = typeInfo.typeName && typesByModule[typeInfo.typeName]
@@ -53,7 +56,7 @@ function createMetadataForTypeInfo(
     f.createPropertyAssignment(
       'parameters',
       f.createArrayLiteralExpression(
-        typeInfo.parameters.map((param) => createMetadataForTypeInfo(f, param, typesByModule))
+        typeInfo.parameters.map((param) => createMetadataForTypeInfo(f, param, filterInterfaceFunctionName, typesByModule))
       )
     ),
   ]
@@ -71,10 +74,62 @@ function createMetadataForTypeInfo(
               ]),
               f.createIdentifier(typeInfo.typeName)
             )
-          : f.createIdentifier(typeInfo.typeName)
+          : f.createCallExpression(filterInterfaceFunctionName, undefined, [
+            f.createStringLiteral(typeInfo.typeName),
+          ])
         /* eslint-enable indent */
       )
     )
   }
   return f.createObjectLiteralExpression(properties, true)
+}
+
+export function createFilterInterfaceFunction(
+  f: ts.NodeFactory,
+  filterInterfaceFunctionName: ts.Identifier
+): ts.FunctionDeclaration {
+  return f.createFunctionDeclaration(
+    undefined,
+    undefined,
+    undefined,
+    filterInterfaceFunctionName,
+    undefined,
+    [
+      f.createParameterDeclaration(
+        undefined,
+        undefined,
+        undefined,
+        'typeName',
+        undefined,
+        undefined,
+        undefined
+      ),
+    ],
+    undefined,
+    f.createBlock(
+      [
+        f.createTryStatement(
+          f.createBlock(
+            [
+              f.createReturnStatement(
+                f.createCallExpression(f.createIdentifier('eval'), undefined, [
+                  f.createIdentifier('typeName'),
+                ])
+              ),
+            ],
+            false
+          ),
+          f.createCatchClause(
+            undefined,
+            f.createBlock(
+              [f.createReturnStatement(f.createIdentifier('undefined'))],
+              false
+            )
+          ),
+          undefined
+        ),
+      ],
+      false
+    )
+  )
 }

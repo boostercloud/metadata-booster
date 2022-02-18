@@ -1,11 +1,12 @@
 import * as ts from 'typescript'
 import { getClassInfo } from './metadata-extractors'
-import { createClassMetadataDecorator } from './statement-creators'
+import { createClassMetadataDecorator, createFilterInterfaceFunction } from './statement-creators'
 
 const transformer: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile> = (program) => {
   const checker = program.getTypeChecker()
   const transformerFactory: ts.TransformerFactory<ts.SourceFile> = (context) => {
     const f = context.factory
+    const filterInterfaceFunctionName = f.createUniqueName('filterInterface')
     return (sourceFile) => {
       const importedTypes: Record<string, string> = {}
       function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
@@ -26,7 +27,7 @@ const transformer: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>
         if (ts.isClassDeclaration(node)) {
           const classInfo = getClassInfo(node, checker)
           if (classInfo) {
-            const metadataDecorator = createClassMetadataDecorator(f, classInfo, importedTypes)
+            const metadataDecorator = createClassMetadataDecorator(f, classInfo, filterInterfaceFunctionName, importedTypes)
             const newDecorators = [...node.decorators ?? [], metadataDecorator]
             return f.updateClassDeclaration(
               node,
@@ -45,6 +46,7 @@ const transformer: (program: ts.Program) => ts.TransformerFactory<ts.SourceFile>
       return f.updateSourceFile(modifiedSourceFile, [
         f.createImportDeclaration(undefined, undefined, undefined, f.createStringLiteral('reflect-metadata')),
         ...modifiedSourceFile.statements,
+        createFilterInterfaceFunction(f, filterInterfaceFunctionName),
       ])
     }
   }
