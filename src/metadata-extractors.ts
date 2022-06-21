@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
+
 import { createWrappedNode, Node, SyntaxKind, Type } from 'ts-morph'
 import * as ts from 'typescript'
 import { TypeGroup } from './metadata-types'
@@ -35,6 +37,15 @@ export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: 
   }
 }
 
+function hasQuestionTokenNode(node: Node<ts.Node> | undefined): boolean {
+  // @ts-ignore
+  if (node && typeof node['hasQuestionToken'] === 'function') {
+    // @ts-ignore
+    return node?.hasQuestionToken()
+  }
+  return false
+}
+
 function getTypeInfo(type: Type, node?: Node): TypeInfo {
   const typeGroupTuples: [(t: Type) => boolean, TypeGroup][] = [
     [(t) => t.isString(), 'String'],
@@ -51,7 +62,9 @@ function getTypeInfo(type: Type, node?: Node): TypeInfo {
     [(t) => isReadonlyArray(t), 'ReadonlyArray'],
     [(t) => t.isObject(), 'Object'],
   ]
-  const isNullable = type.isNullable()
+
+  const hasQuestionToken = hasQuestionTokenNode(node)
+  const isNullable = type.isNullable() || hasQuestionToken
   type = type.getNonNullableType()
   const typeInfo: TypeInfo = {
     name: type.getText(node), // node is passed for better name printing: https://github.com/dsherret/ts-morph/issues/907
