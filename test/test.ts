@@ -14,8 +14,18 @@ enum Size {
   Big,
 }
 
-class Car {
-  constructor(public driversMap: Map<string, User>, public size: Size) {}
+abstract class Vehicle {
+  constructor(public hasWheels: boolean) {}
+}
+
+class Car extends Vehicle {
+  // Fields can be added via constructor but also just as member variables in the class directly
+  public driversMap: Map<string, User>
+  public size: Size
+
+  constructor() {
+    super(true)
+  }
 
   public engageAutoPilot(): Promise<boolean> {
     // Asume a long task here
