@@ -30,10 +30,12 @@ export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: 
     SyntaxKind.ClassDeclaration
   )
 
+  const fields = node.getInstanceProperties().concat(node.getBaseClass()?.getInstanceProperties() || [])
+  const methods = node.getMethods().concat(node.getBaseClass()?.getMethods() || [])
   return {
     name: node.getNameOrThrow(),
-    fields: node.getInstanceProperties().map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType(), p) })),
-    methods: node.getMethods().map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType(), m) })),
+    fields: fields.map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType(), p) })),
+    methods: methods.map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType(), m) })),
   }
 }
 
