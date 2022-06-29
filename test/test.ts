@@ -18,7 +18,7 @@ class Car {
   constructor(public driversMap: Map<string, User>, public size: Size) {}
 
   public engageAutoPilot(): Promise<boolean> {
-    // Asume a long task here
+    // Assume a long task here
     return Promise.resolve(true)
   }
 }
@@ -26,6 +26,16 @@ class Car {
 class GenericClass<T> {
   constructor(readonly genericValue: T) {}
 }
+
+class Animal {
+  constructor(readonly animalProp: string) {}
+}
+
+class Dog extends Animal {
+  readonly dogProp!: string
+}
+
+class Chihuahua extends Dog {}
 
 class Test {
   constructor(
@@ -43,6 +53,7 @@ class Test {
     public unknown0: unknown, // typeGroup = Other
     public record: Record<string, undefined>, // typeGroup = Type
     public generic: GenericClass<string>, // typeGroup: "Object", typeName = GenericClass, parameter[typeGroup] = string
+    public inheritedProps: Chihuahua,
     public optionalString?: string, // typeGroup = String, nullable = true
     public optionalNull?: string, // typeGroup = String, nullable = true
     public optionalUndefined?: undefined, // typeGroup = Other, nullable = true

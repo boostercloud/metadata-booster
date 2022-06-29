@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 
-import { createWrappedNode, Node, SyntaxKind, Type } from 'ts-morph'
+import { ClassDeclaration, ClassInstancePropertyTypes, createWrappedNode, Node, SyntaxKind, Type } from 'ts-morph'
 import * as ts from 'typescript'
 import { TypeGroup } from './metadata-types'
 
@@ -32,9 +32,17 @@ export function getClassInfo(classNode: ts.ClassDeclaration & ts.Node, checker: 
 
   return {
     name: node.getNameOrThrow(),
-    fields: node.getInstanceProperties().map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType(), p) })),
+    fields: getInstanceProperties(node).map((p) => ({ name: p.getName(), typeInfo: getTypeInfo(p.getType(), p) })),
     methods: node.getMethods().map((m) => ({ name: m.getName(), typeInfo: getTypeInfo(m.getReturnType(), m) })),
   }
+}
+
+function getInstanceProperties(classDeclaration?: ClassDeclaration): Array<ClassInstancePropertyTypes> {
+  if (classDeclaration == undefined) {
+    return []
+  }
+  // Ensure to get the properties of the base classes too
+  return [...getInstanceProperties(classDeclaration.getBaseClass()), ...classDeclaration.getInstanceProperties()]
 }
 
 function hasQuestionTokenNode(node: Node<ts.Node> | undefined): boolean {

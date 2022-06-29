@@ -140,7 +140,7 @@ Here are the steps:
 npm install --save-dev "metadata-booster"
 npm install --save-dev "ttypescript"
 ```
-2. Add the oficial module "reflect-metadata" to your `"dependencies"` (you need this to access the metadata)
+2. Add the official module "reflect-metadata" to your `"dependencies"` (you need this to access the metadata)
 ```shell
 npm install --save-prod "reflect-metadata"
 ```
